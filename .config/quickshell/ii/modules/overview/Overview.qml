@@ -31,7 +31,7 @@ Scope {
             color: "transparent"
 
             mask: Region {
-                item: GlobalStates.overviewOpen ? columnLayout : null
+                item: GlobalStates.overviewOpen ? (searchWidget.searchActive ? searchWidget : columnLayout) : null
             }
             // HyprlandWindow.visibleMask: Region { // Buggy with scaled monitors
             //     item: GlobalStates.overviewOpen ? columnLayout : null

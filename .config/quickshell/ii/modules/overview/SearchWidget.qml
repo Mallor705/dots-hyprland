@@ -14,9 +14,10 @@ Item { // Wrapper
     id: root
     readonly property string xdgConfigHome: Directories.config
     property string searchingText: ""
-    property bool showResults: searchingText != ""
+    property bool searchActive: searchingText != ""
+    property bool showResults: searchActive
     property real searchBarHeight: searchBar.height + Appearance.sizes.elevationMargin * 2
-    implicitWidth: searchWidgetContent.implicitWidth + Appearance.sizes.elevationMargin * 2
+    implicitWidth: searchActive ? searchWidgetContent.implicitWidth + Appearance.sizes.elevationMargin * 2 : 0
     implicitHeight: searchWidgetContent.implicitHeight + Appearance.sizes.elevationMargin * 2
 
     property string mathResult: ""
