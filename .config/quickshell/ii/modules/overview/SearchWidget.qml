@@ -14,7 +14,7 @@ Item { // Wrapper
     id: root
     readonly property string xdgConfigHome: Directories.config
     property string searchingText: ""
-    property bool searchActive: searchingText != ""
+    property bool searchActive: searchingText != "" || GlobalStates.overviewShowAllApps
     property bool showResults: searchActive
     property real searchBarHeight: searchBar.height + Appearance.sizes.elevationMargin * 2
     implicitWidth: searchActive ? searchWidgetContent.implicitWidth + Appearance.sizes.elevationMargin * 2 : 0
@@ -212,7 +212,7 @@ Item { // Wrapper
                     selectionColor: Appearance.colors.colSecondaryContainer
                     placeholderText: Translation.tr("Search, calculate or run")
                     placeholderTextColor: Appearance.m3colors.m3outline
-                    implicitWidth: root.searchingText == "" ? Appearance.sizes.searchWidthCollapsed : Appearance.sizes.searchWidth
+                    implicitWidth: (root.searchingText == "" && !GlobalStates.overviewShowAllApps) ? Appearance.sizes.searchWidthCollapsed : Appearance.sizes.searchWidth
 
                     Behavior on implicitWidth {
                         id: searchWidthBehavior
@@ -287,7 +287,7 @@ Item { // Wrapper
                     values: {
                         // Search results are handled here
                         ////////////////// Skip? //////////////////
-                        if (root.searchingText == "")
+                        if (root.searchingText == "" && !GlobalStates.overviewShowAllApps)
                             return [];
 
                         ///////////// Special cases ///////////////
@@ -406,11 +406,22 @@ Item { // Wrapper
                         }
 
                         //////////////// Apps //////////////////
-                        result = result.concat(AppSearch.fuzzyQuery(root.searchingText).map(entry => {
-                            entry.clickActionName = Translation.tr("Launch");
-                            entry.type = Translation.tr("App");
-                            return entry;
-                        }));
+                        if (GlobalStates.overviewShowAllApps && root.searchingText == "") {
+                            result = result.concat(AppSearch.list.map(entry => {
+                                return Object.assign({}, entry, {
+                                    clickActionName: Translation.tr("Launch"),
+                                    type: Translation.tr("App")
+                                });
+                            }));
+                        } else if (root.searchingText != "") {
+                            result = result.concat(AppSearch.fuzzyQuery(root.searchingText).map(entry => {
+                                return Object.assign({}, entry, {
+                                    clickActionName: Translation.tr("Launch"),
+                                    type: Translation.tr("App")
+                                });
+                            }));
+                        }
+
 
                         ////////// Launcher actions ////////////
                         result = result.concat(launcherActionObjects);

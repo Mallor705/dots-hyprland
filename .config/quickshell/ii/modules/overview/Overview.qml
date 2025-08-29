@@ -12,6 +12,7 @@ import Quickshell.Hyprland
 
 Scope {
     id: overviewScope
+    property bool openedForAllApps: false
     property bool dontAutoCancelSearch: false
     Variants {
         id: overviewVariants
@@ -23,7 +24,7 @@ Scope {
             readonly property HyprlandMonitor monitor: Hyprland.monitorFor(root.screen)
             property bool monitorIsFocused: (Hyprland.focusedMonitor?.id == monitor?.id)
             screen: modelData
-            visible: GlobalStates.overviewOpen
+            visible: GlobalStates.overviewShowAllApps ? modelData.name === Hyprland.focusedMonitor?.name : GlobalStates.overviewOpen
 
             WlrLayershell.namespace: "quickshell:overview"
             WlrLayershell.layer: WlrLayer.Overlay
@@ -61,6 +62,9 @@ Scope {
                     if (!GlobalStates.overviewOpen) {
                         searchWidget.disableExpandAnimation();
                         overviewScope.dontAutoCancelSearch = false;
+                        GlobalStates.overviewShowAllApps = false;
+                        root.searchingText = "";
+                        overviewScope.openedForAllApps = false;
                     } else {
                         if (!overviewScope.dontAutoCancelSearch) {
                             searchWidget.cancelSearch();
@@ -122,7 +126,7 @@ Scope {
                     active: GlobalStates.overviewOpen && (Config?.options.overview.enable ?? true)
                     sourceComponent: OverviewWidget {
                         panelWindow: root
-                        visible: (root.searchingText == "")
+                        visible: (root.searchingText == "" && !GlobalStates.overviewShowAllApps)
                     }
                 }
             }
@@ -161,6 +165,18 @@ Scope {
         }
     }
 
+    function toggleAllApps() {
+        if (GlobalStates.overviewOpen && GlobalStates.overviewShowAllApps) {
+            GlobalStates.overviewOpen = false;
+            GlobalStates.overviewShowAllApps = false;
+            overviewScope.openedForAllApps = false;
+            return;
+        }
+        GlobalStates.overviewShowAllApps = true;
+        GlobalStates.overviewOpen = true;
+        overviewScope.openedForAllApps = true;
+    }
+
     IpcHandler {
         target: "overview"
 
@@ -178,6 +194,9 @@ Scope {
         }
         function clipboardToggle() {
             overviewScope.toggleClipboard();
+        }
+        function toggleAllApps() {
+            overviewScope.toggleAllApps();
         }
     }
 
@@ -210,6 +229,10 @@ Scope {
                 GlobalStates.superReleaseMightTrigger = true;
                 return;
             }
+            if (overviewScope.openedForAllApps) {
+                overviewScope.openedForAllApps = false;
+                return;
+            }
             GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
         }
     }
@@ -236,6 +259,15 @@ Scope {
 
         onPressed: {
             overviewScope.toggleEmojis();
+        }
+    }
+
+    GlobalShortcut {
+        name: "overviewAllAppsToggle"
+        description: "Toggle show all apps on overview widget"
+
+        onPressed: {
+            overviewScope.toggleAllApps();
         }
     }
 }
