@@ -2,7 +2,6 @@ import "./weather"
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Bluetooth
 import Quickshell.Services.UPower
 import qs
 import qs.services
@@ -290,15 +289,9 @@ Item { // Bar content region
                             color: rightSidebarButton.colText
                         }
                     }
-                    Loader {
-                        active: HyprlandXkb.layoutCodes.length > 1
-                        visible: active
+                    HyprlandXkbIndicator {
+                        Layout.alignment: Qt.AlignVCenter
                         Layout.rightMargin: indicatorsRowLayout.realSpacing
-                        sourceComponent: StyledText {
-                            text: HyprlandXkb.currentLayoutCode
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            color: rightSidebarButton.colText
-                        }
                     }
                     MaterialSymbol {
                         Layout.rightMargin: indicatorsRowLayout.realSpacing
@@ -307,10 +300,7 @@ Item { // Bar content region
                         color: rightSidebarButton.colText
                     }
                     MaterialSymbol {
-                        readonly property bool bluetoothEnabled: Bluetooth.defaultAdapter?.enabled
-                        readonly property BluetoothDevice bluetoothDevice: Bluetooth.defaultAdapter?.devices.values.find(device => device.connected)
-                        readonly property bool bluetoothConnected: bluetoothDevice !== undefined
-                        text: bluetoothConnected ? "bluetooth_connected" : bluetoothEnabled ? "bluetooth" : "bluetooth_disabled"
+                        text: BluetoothStatus.connected ? "bluetooth_connected" : BluetoothStatus.enabled ? "bluetooth" : "bluetooth_disabled"
                         iconSize: Appearance.font.pixelSize.larger
                         color: rightSidebarButton.colText
                     }

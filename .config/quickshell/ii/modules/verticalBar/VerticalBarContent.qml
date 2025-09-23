@@ -110,8 +110,9 @@ Item { // Bar content region
             vertical: true
             padding: 6
 
-            Workspaces {
+            Bar.Workspaces {
                 id: workspacesWidget
+                vertical: true
                 MouseArea {
                     // Right-click to toggle overview
                     anchors.fill: parent
@@ -268,15 +269,10 @@ Item { // Bar content region
                             color: rightSidebarButton.colText
                         }
                     }
-                    Loader {
-                        active: HyprlandXkb.layoutCodes.length > 1
-                        visible: active
+                    Bar.HyprlandXkbIndicator {
+                        vertical: true
+                        Layout.alignment: Qt.AlignHCenter
                         Layout.bottomMargin: indicatorsColumnLayout.realSpacing
-                        sourceComponent: StyledText {
-                            text: HyprlandXkb.currentLayoutCode
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            color: rightSidebarButton.colText
-                        }
                     }
                     MaterialSymbol {
                         Layout.bottomMargin: indicatorsColumnLayout.realSpacing
@@ -285,10 +281,7 @@ Item { // Bar content region
                         color: rightSidebarButton.colText
                     }
                     MaterialSymbol {
-                        readonly property bool bluetoothEnabled: Bluetooth.defaultAdapter?.enabled
-                        readonly property BluetoothDevice bluetoothDevice: Bluetooth.defaultAdapter?.devices.values.find(device => device.connected)
-                        readonly property bool bluetoothConnected: bluetoothDevice !== undefined
-                        text: bluetoothConnected ? "bluetooth_connected" : bluetoothEnabled ? "bluetooth" : "bluetooth_disabled"
+                        text: BluetoothStatus.connected ? "bluetooth_connected" : BluetoothStatus.enabled ? "bluetooth" : "bluetooth_disabled"
                         iconSize: Appearance.font.pixelSize.larger
                         color: rightSidebarButton.colText
                     }

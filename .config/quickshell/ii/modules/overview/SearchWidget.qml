@@ -39,9 +39,21 @@ Item { // Wrapper
 
     property var searchActions: [
         {
+            action: "accentcolor",
+            execute: args => {
+                Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--noswitch", "--color", ...(args != '' ? [`${args}`] : [])]);
+            }
+        },
+        {
             action: "dark",
             execute: () => {
                 Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--mode", "dark", "--noswitch"]);
+            }
+        },
+        {
+            action: "konachanwallpaper",
+            execute: () => {
+                Quickshell.execDetached([Quickshell.shellPath("scripts/colors/random_konachan_wall.sh")]);
             }
         },
         {
@@ -51,27 +63,29 @@ Item { // Wrapper
             }
         },
         {
-            action: "wall",
-            execute: () => {
-                Quickshell.execDetached([Directories.wallpaperSwitchScriptPath]);
-            }
-        },
-        {
-            action: "konachanwall",
-            execute: () => {
-                Quickshell.execDetached([Quickshell.shellPath("scripts/colors/random_konachan_wall.sh")]);
-            }
-        },
-        {
-            action: "accentcolor",
+            action: "superpaste",
             execute: args => {
-                Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--noswitch", "--color", ...(args != '' ? [`${args}`] : [])]);
+                if (!/^(\d+)/.test(args.trim())) {
+                    // Invalid if doesn't start with numbers
+                    Quickshell.execDetached(["notify-send", Translation.tr("Superpaste"), Translation.tr("Usage: <tt>%1superpaste NUM_OF_ENTRIES[i]</tt>\nSupply <tt>i</tt> when you want images\nExamples:\n<tt>%1superpaste 4i</tt> for the last 4 images\n<tt>%1superpaste 7</tt> for the last 7 entries").arg(Config.options.search.prefix.action), "-a", "Shell"]);
+                    return;
+                }
+                const syntaxMatch = /^(?:(\d+)(i)?)/.exec(args.trim());
+                const count = syntaxMatch[1] ? parseInt(syntaxMatch[1]) : 1;
+                const isImage = !!syntaxMatch[2];
+                Cliphist.superpaste(count, isImage);
             }
         },
         {
             action: "todo",
             execute: args => {
                 Todo.addTask(args);
+            }
+        },
+        {
+            action: "wallpaper",
+            execute: () => {
+                GlobalStates.wallpaperSelectorOpen = true;
             }
         },
     ]
@@ -210,7 +224,7 @@ Item { // Wrapper
                     color: activeFocus ? Appearance.m3colors.m3onSurface : Appearance.m3colors.m3onSurfaceVariant
                     selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
                     selectionColor: Appearance.colors.colSecondaryContainer
-                    placeholderText: Translation.tr("Search, calculate or run")
+                    placeholderText: GlobalStates.overviewShowAllApps ? Translation.tr("Search apps...") : Translation.tr("Search, calculate or run")
                     placeholderTextColor: Appearance.m3colors.m3outline
                     implicitWidth: (root.searchingText == "" && !GlobalStates.overviewShowAllApps) ? Appearance.sizes.searchWidthCollapsed : Appearance.sizes.searchWidth
 
@@ -268,7 +282,7 @@ Item { // Wrapper
 
                 onFocusChanged: {
                     if (focus)
-                        appResults.currentIndex = 0;
+                        appResults.currentIndex = 1;
                 }
 
                 Connections {
@@ -297,16 +311,23 @@ Item { // Wrapper
                             return Cliphist.fuzzyQuery(searchString).map(entry => {
                                 return {
                                     cliphistRawString: entry,
-                                    name: entry.replace(/^\s*\S+\s+/, ""),
+                                    name: StringUtils.cleanCliphistEntry(entry),
                                     clickActionName: "",
                                     type: `#${entry.match(/^\s*(\S+)/)?.[1] || ""}`,
                                     execute: () => {
-                                        Cliphist.copy(entry)
+                                        Cliphist.copy(entry);
                                     },
                                     actions: [
                                         {
+                                            name: "Copy",
+                                            materialIcon: "content_copy",
+                                            execute: () => {
+                                                Cliphist.copy(entry);
+                                            }
+                                        },
+                                        {
                                             name: "Delete",
-                                            icon: "delete",
+                                            materialIcon: "delete",
                                             execute: () => {
                                                 Cliphist.deleteEntry(entry);
                                             }
@@ -314,8 +335,7 @@ Item { // Wrapper
                                     ]
                                 };
                             }).filter(Boolean);
-                        }
-                        else if (root.searchingText.startsWith(Config.options.search.prefix.emojis)) {
+                        } else if (root.searchingText.startsWith(Config.options.search.prefix.emojis)) {
                             // Clipboard
                             const searchString = root.searchingText.slice(Config.options.search.prefix.emojis.length);
                             return Emojis.fuzzyQuery(searchString).map(entry => {
@@ -374,7 +394,7 @@ Item { // Wrapper
                                 }
                                 Qt.openUrlExternally(url);
                             }
-                        }
+                        };
                         const launcherActionObjects = root.searchActions.map(action => {
                             const actionString = `${Config.options.search.prefix.action}${action.action}`;
                             if (actionString.startsWith(root.searchingText) || root.searchingText.startsWith(actionString)) {
@@ -422,15 +442,17 @@ Item { // Wrapper
                             }));
                         }
 
-
                         ////////// Launcher actions ////////////
                         result = result.concat(launcherActionObjects);
 
                         /// Math result, command, web search ///
                         if (Config.options.search.prefix.showDefaultActionsWithoutPrefix) {
-                            if (!startsWithShellCommandPrefix) result.push(commandResultObject);
-                            if (!startsWithNumber && !startsWithMathPrefix) result.push(mathResultObject);
-                            if (!startsWithWebSearchPrefix) result.push(webSearchResultObject);
+                            if (!startsWithShellCommandPrefix)
+                                result.push(commandResultObject);
+                            if (!startsWithNumber && !startsWithMathPrefix)
+                                result.push(mathResultObject);
+                            if (!startsWithWebSearchPrefix)
+                                result.push(webSearchResultObject);
                         }
 
                         return result;
